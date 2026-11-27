@@ -388,7 +388,41 @@ test.describe('nested validation', () => {
       return page.getByRole('tabpanel', { name: label, exact: true })
     }
 
-    test('shows server errors in the tab of the open form that displays them', async ({
+    // The buttons of tree items only show while hovering them.
+    async function editVolume(panel: Locator, label: string) {
+      const header = panel
+        .locator('.dito-tree-item__header')
+        .filter({ hasText: label })
+      await header.hover()
+      await header.getByRole('link', { name: 'Edit' }).click()
+    }
+
+    test('leaves the form of a tree when another tab is selected', async ({
+      page,
+      url
+    }) => {
+      const book = await seedBook({ volumes: [{ title: 'Valid' }] })
+      await page.goto(`${url}/admin/book-volumes/${book.id}`)
+      await getTab(page, 'Content').click()
+      await editVolume(getTabPanel(page, 'Content'), 'Valid')
+      await expect(page).toHaveURL(/\/content\/volumes\/0$/)
+      await getTab(page, 'Outline').click()
+      // The route names the selected tab, without the form of the item.
+      await expect(page).toHaveURL(/\/outline$/)
+      await expect(page.locator('.dito-trail')).not.toContainText('Edit Volume')
+      // Editing in the selected tab stays there.
+      const outline = getTabPanel(page, 'Outline')
+      await editVolume(outline, 'Valid')
+      await expect(page).toHaveURL(/\/outline\/volumes\/0$/)
+      await outline.getByLabel('Volume Note', { exact: true }).fill('Note')
+      await expect(getTab(page, 'Outline')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(page).toHaveURL(/\/outline\/volumes\/0$/)
+    })
+
+    test('shows server errors in the tab of a form left for another tab', async ({
       page,
       url
     }) => {
@@ -396,15 +430,10 @@ test.describe('nested validation', () => {
       await page.goto(`${url}/admin/book-volumes/${book.id}`)
       await getTab(page, 'Content').click()
       const content = getTabPanel(page, 'Content')
-      // The buttons of tree items only show while hovering them.
-      const header = content
-        .locator('.dito-tree-item__header')
-        .filter({ hasText: 'Valid' })
-      await header.hover()
-      await header.getByRole('link', { name: 'Edit' }).click()
+      await editVolume(content, 'Valid')
       await expect(page).toHaveURL(/\/content\/volumes\/0$/)
       await content.getByLabel('Volume Title', { exact: true }).fill('lower')
-      // Select another tab while the form of the item is still open.
+      // Select another tab, which leaves the form of the item.
       await getTab(page, 'Outline').click()
       await saveInvalid(page)
       // The Content tab is selected again to display the error in the form.
@@ -424,11 +453,7 @@ test.describe('nested validation', () => {
       await page.goto(`${url}/admin/book-volumes/${book.id}`)
       await getTab(page, 'Content').click()
       const content = getTabPanel(page, 'Content')
-      const header = content
-        .locator('.dito-tree-item__header')
-        .filter({ hasText: 'Valid' })
-      await header.hover()
-      await header.getByRole('link', { name: 'Edit' }).click()
+      await editVolume(content, 'Valid')
       await content.getByLabel('Volume Title', { exact: true }).fill('lower')
       // Close the form of the item through the breadcrumb of the book's form.
       await page

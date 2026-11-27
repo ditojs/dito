@@ -51,7 +51,7 @@ slot(name="prepend")
           :modelValue="selectedTab"
           :tabs="renderedTabs"
           :context="context"
-          @update:modelValue="selectTab"
+          @update:modelValue="onSelectTab"
         )
       DitoClipboard.dito-schema-header__buttons(
         v-if="clipboard && isClipboardInHeader"
@@ -170,6 +170,7 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
+import { navigate } from '../utils/route.js'
 import {
   getNamedSchemas,
   getPanelEntries,
@@ -366,6 +367,25 @@ export default {
       shouldFollowDefaultTab = false
     }
 
+    // Selecting another tab leaves the form that the route opens in the
+    // current one, e.g. of a tree item, so that the route names the tab that
+    // shows. Tree forms edit their data in place, so nothing is lost:
+    const onSelectTab = tab => {
+      if (
+        tab !== selectedTab.value &&
+        isTopLevelSchema.value &&
+        routeContext?.childClaim &&
+        isClaimingRoute(appendDataPath(componentPath.value, selectedTab.value))
+      ) {
+        navigate(router, {
+          path: `${routeContext.path}/${tab}`,
+          query: router.currentRoute.value.query
+        })
+      } else {
+        selectTab(tab)
+      }
+    }
+
     // Editing the data doesn't switch the tab:
     const selectDefaultTab = () => {
       selectedTab.value = defaultTab.value
@@ -490,6 +510,7 @@ export default {
       renderedTabs,
       selectedTab,
       selectTab,
+      onSelectTab,
       isTopLevelSchema,
       isTabSelected,
 
