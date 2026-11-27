@@ -451,6 +451,10 @@ export default {
     flex-flow: row wrap;
     align-items: center;
 
+    > .dito-info {
+      margin-left: $input-padding-hor;
+    }
+
     > .dito-component--fill {
       flex: 1;
       width: auto;

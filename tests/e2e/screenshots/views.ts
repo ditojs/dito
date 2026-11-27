@@ -322,6 +322,7 @@ export const projects = createWidgetView<Project>(
             website: {
               type: 'url',
               label: 'Website',
+              info: 'The address of the project',
               width: '1/2'
             },
             startTime: {
