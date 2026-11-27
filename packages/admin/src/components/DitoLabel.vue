@@ -178,8 +178,10 @@ export default {
     contain: inline-size;
   }
 
-  .dito-info {
-    margin-left: 0.35em;
+  // The info of collapsible labels follows their toggle, while the gap of the
+  // label's content spaces the other ones:
+  > .dito-info {
+    margin-left: $input-padding-hor;
   }
 
   &__buttons {
